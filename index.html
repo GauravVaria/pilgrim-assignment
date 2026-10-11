@@ -1,0 +1,132 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>D2C Channel Dashboard</title>
+<style>
+/* Layout: filter bar on top, KPI strip, 2-col chart grid (channel, month, product, category table). Single blue accent; status colors reserved for margin cues. */
+:root{--bg:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#6f6d67;--grid:#e1e0d9;--axis:#c3c2b7;--bar:#2a78d6;--bar-dim:#9ec5f4;--bd:rgba(11,11,11,.10);--good:#006300;--warn:#8a5a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09e96;--grid:#2c2c2a;--axis:#383835;--bar:#3987e5;--bar-dim:#1c5cab;--bd:rgba(255,255,255,.10);--good:#0ca30c;--warn:#fab219;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09e96;--grid:#2c2c2a;--axis:#383835;--bar:#3987e5;--bar-dim:#1c5cab;--bd:rgba(255,255,255,.10);--good:#0ca30c;--warn:#fab219;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding-inline:16px;padding-block:20px;font-size:14px;line-height:1.45}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end}
+h1{font-size:22px;margin:0;font-weight:650;text-wrap:balance}
+.sub{color:var(--ink2);margin:2px 0 0;font-size:13px}
+.filters{display:flex;flex-wrap:wrap;gap:10px}
+label{display:flex;flex-direction:column;gap:3px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+select{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--surface);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;min-width:130px}
+select:focus-visible,button:focus-visible{outline:2px solid var(--bar);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;min-width:0}
+.kpi .l{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-size:26px;font-weight:650;margin-top:2px}
+.kpi .n{font-size:12px;color:var(--ink2)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--bd);border-radius:8px;padding:14px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card h2{font-size:14px;margin:0;font-weight:650}
+.card .hint{font-size:12px;color:var(--ink2);margin:2px 0 8px}
+svg{width:100%;height:auto;display:block;overflow:visible}
+svg text{fill:var(--muted);font-size:11px;font-family:inherit}
+svg .lab{fill:var(--ink)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);padding:6px 9px;border-radius:6px;font-size:12px;z-index:5;opacity:0;transition:opacity .08s;max-width:220px}
+.tabs{display:flex;gap:6px;margin-bottom:6px}
+button.t{font:inherit;font-size:12px;background:none;color:var(--ink2);border:1px solid var(--bd);border-radius:6px;padding:3px 9px;cursor:pointer}
+button.t[aria-pressed=true]{background:var(--bar);color:#fff;border-color:var(--bar)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid currentColor}
+.pill.g{color:var(--good)}.pill.w{color:var(--warn)}
+.ins{margin:0;padding-left:18px;color:var(--ink2);font-size:13px;display:flex;flex-direction:column;gap:4px}
+footer{color:var(--muted);font-size:12px}
+</style>
+<div class="wrap">
+<header>
+ <div><h1>D2C Channel and Product Performance</h1><p class="sub" id="sub"></p></div>
+ <div class="filters">
+  <label>Channel<select id="fCh"></select></label>
+  <label>Category<select id="fCat"></select></label>
+  <label>Segment<select id="fSeg"></select></label>
+ </div>
+</header>
+<section class="kpis" id="kpis" aria-label="Key figures"></section>
+<section class="card wide"><h2>Key takeaways</h2><ul class="ins" id="ins"></ul></section>
+<div class="grid">
+ <section class="card"><h2>Net revenue by channel</h2><p class="hint">After channel discount. Label shows share of revenue and average discount.</p><div id="cCh"></div></section>
+ <section class="card"><h2>Net revenue by month</h2><p class="hint">Hover a point for the month's figures.</p><div id="cMo"></div></section>
+ <section class="card wide"><div class="tabs"><h2 style="flex:1;align-self:center">Net revenue by product</h2><button class="t" id="bRev" aria-pressed="true">Revenue</button><button class="t" id="bGp" aria-pressed="false">Gross profit</button></div><p class="hint">Hero products are drawn in the full blue; others are lighter.</p><div id="cPr" style="max-width:720px"></div></section>
+ <section class="card wide"><h2>Category summary</h2><p class="hint">Total Revenue, Orders and Avg Order Value (revenue / orders), plus gross margin.</p><div class="scroll"><table id="tCat"></table></div></section>
+ <section class="card wide"><h2>Channel discount and margin</h2><p class="hint">Gross margin = (net revenue − cost of goods) / net revenue. Deeper discounts cut margin.</p><div class="scroll"><table id="tCh"></table></div></section>
+</div>
+<footer>Source: 50 orders (Jan–Dec 2024) joined to product pricing on product and channel. Revenue = MRP × quantity × (1 − discount %).</footer>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+const RAW=[[1001,"2024-11-23","Gold","Haircare","Hair Mask",2,"Website",1047.0,12.0,366.45,"Y"],[1002,"2024-10-29","Silver","Skincare","Sunscreen SPF50",2,"Amazon",1442.0,20.0,547.96,"Y"],[1003,"2024-04-11","Silver","Makeup","Lipstick",4,"App",955.0,5.0,382.0,"N"],[1004,"2024-12-23","Silver","Haircare","Hair Mask",3,"Website",1047.0,12.0,366.45,"Y"],[1005,"2024-07-02","Bronze","Wellness","Collagen Supplement",4,"Website",1453.0,12.0,464.96,"Y"],[1006,"2024-10-09","Silver","Wellness","Ashwagandha",2,"App",1410.0,5.0,451.2,"N"],[1007,"2024-05-28","Gold","Skincare","Face Wash",3,"App",1215.0,0.0,461.7,"N"],[1008,"2024-07-08","Silver","Skincare","Night Cream",2,"App",1488.0,5.0,565.44,"N"],[1009,"2024-08-24","Silver","Haircare","Conditioner",1,"Instagram",1395.0,10.0,488.25,"N"],[1010,"2024-07-24","Gold","Wellness","Vitamin D3",4,"App",1449.0,5.0,463.68,"N"],[1011,"2024-05-15","Gold","Wellness","Ashwagandha",4,"Instagram",1410.0,10.0,451.2,"N"],[1012,"2024-04-22","Gold","Skincare","Vitamin C Serum",1,"WhatsApp",1813.0,7.0,688.94,"Y"],[1013,"2024-11-01","Gold","Makeup","Eyeliner",3,"Website",1426.0,8.0,570.4,"N"],[1014,"2024-12-15","Bronze","Wellness","Collagen Supplement",3,"Website",1453.0,12.0,464.96,"Y"],[1015,"2024-05-14","Silver","Skincare","Moisturizer",5,"Instagram",1358.0,8.0,516.04,"N"],[1016,"2024-03-23","Silver","Skincare","Night Cream",3,"Instagram",1488.0,10.0,565.44,"N"],[1017,"2024-06-06","Gold","Skincare","Vitamin C Serum",4,"App",1813.0,5.0,688.94,"Y"],[1018,"2024-03-06","Silver","Haircare","Conditioner",5,"App",1395.0,5.0,488.25,"N"],[1019,"2024-10-03","Bronze","Wellness","Probiotic Blend",3,"WhatsApp",1441.0,8.0,461.12,"N"],[1020,"2024-03-02","Gold","Wellness","Collagen Supplement",5,"App",1453.0,10.0,464.96,"Y"],[1021,"2024-01-04","Gold","Haircare","Shampoo 250ml",1,"Amazon",2169.0,12.0,759.15,"N"],[1022,"2024-05-01","Gold","Haircare","Hair Oil",2,"Amazon",777.0,20.0,271.95,"N"],[1023,"2024-08-30","Gold","Makeup","Lipstick",1,"Instagram",955.0,15.0,382.0,"N"],[1024,"2024-08-04","Silver","Skincare","Vitamin C Serum",4,"App",1813.0,5.0,688.94,"Y"],[1025,"2024-04-08","Gold","Haircare","Scalp Serum",2,"Website",529.0,5.0,185.15,"N"],[1026,"2024-08-14","Bronze","Skincare","Vitamin C Serum",5,"App",1813.0,5.0,688.94,"Y"],[1027,"2024-03-26","Silver","Haircare","Scalp Serum",1,"WhatsApp",529.0,5.0,185.15,"N"],[1028,"2024-05-15","Bronze","Wellness","Probiotic Blend",5,"App",1441.0,8.0,461.12,"N"],[1029,"2024-04-07","Silver","Skincare","Moisturizer",1,"Amazon",1358.0,15.0,516.04,"N"],[1030,"2024-09-28","Gold","Skincare","Sunscreen SPF50",1,"WhatsApp",1442.0,8.0,547.96,"Y"],[1031,"2024-03-02","Bronze","Haircare","Hair Oil",5,"WhatsApp",777.0,5.0,271.95,"N"],[1032,"2024-12-02","Silver","Wellness","Omega 3",2,"App",1161.0,5.0,371.52,"Y"],[1033,"2024-05-15","Silver","Makeup","Foundation",1,"Amazon",171.0,22.0,68.4,"N"],[1034,"2024-02-21","Gold","Wellness","Vitamin D3",3,"Instagram",1449.0,10.0,463.68,"N"],[1035,"2024-05-25","Gold","Wellness","Ashwagandha",5,"Instagram",1410.0,10.0,451.2,"N"],[1036,"2024-12-05","Gold","Wellness","Collagen Supplement",1,"Instagram",1453.0,15.0,464.96,"Y"],[1037,"2024-05-24","Silver","Haircare","Conditioner",5,"Website",1395.0,8.0,488.25,"N"],[1038,"2024-11-20","Silver","Skincare","Vitamin C Serum",3,"App",1813.0,5.0,688.94,"Y"],[1039,"2024-08-14","Silver","Skincare","Vitamin C Serum",1,"Amazon",1813.0,18.0,688.94,"Y"],[1040,"2024-01-19","Bronze","Haircare","Scalp Serum",2,"Website",529.0,5.0,185.15,"N"],[1041,"2024-07-02","Gold","Skincare","Moisturizer",5,"Amazon",1358.0,15.0,516.04,"N"],[1042,"2024-03-20","Bronze","Haircare","Hair Mask",4,"WhatsApp",1047.0,10.0,366.45,"Y"],[1043,"2024-12-08","Bronze","Wellness","Vitamin D3",1,"WhatsApp",1449.0,8.0,463.68,"N"],[1044,"2024-04-23","Gold","Wellness","Omega 3",2,"WhatsApp",1161.0,8.0,371.52,"Y"],[1045,"2024-06-17","Gold","Wellness","Omega 3",5,"Instagram",1161.0,12.0,371.52,"Y"],[1046,"2024-01-15","Gold","Haircare","Hair Oil",3,"WhatsApp",777.0,5.0,271.95,"N"],[1047,"2024-06-25","Bronze","Makeup","Eyeliner",5,"App",1426.0,5.0,570.4,"N"],[1048,"2024-05-10","Gold","Skincare","Night Cream",5,"Instagram",1488.0,10.0,565.44,"N"],[1049,"2024-08-08","Gold","Wellness","Collagen Supplement",3,"Instagram",1453.0,15.0,464.96,"Y"],[1050,"2024-07-25","Silver","Haircare","Hair Mask",4,"App",1047.0,10.0,366.45,"Y"]];
+const D=RAW.map(r=>{const[id,date,seg,cat,prod,q,ch,mrp,disc,cost,hero]=r;const gross=mrp*q,rev=gross*(1-disc/100);return{id,date,month:date.slice(0,7),seg,cat,prod,q,ch,mrp,disc,hero,gross,rev,gp:rev-cost*q,cogs:cost*q}});
+const $=s=>document.querySelector(s),fmt=n=>'₹'+Math.round(n).toLocaleString('en-IN'),pct=n=>n.toFixed(1)+'%';
+const uniq=k=>[...new Set(D.map(d=>d[k]))].sort();
+function fill(id,vals){const s=$(id);s.innerHTML='<option value="">All</option>'+vals.map(v=>`<option>${v}</option>`).join('')}
+fill('#fCh',uniq('ch'));fill('#fCat',uniq('cat'));fill('#fSeg',['Gold','Silver','Bronze']);
+let metric='rev';
+const tip=$('#tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const w=tip.offsetWidth;let x=e.clientX+12;if(x+w>innerWidth-8)x=e.clientX-w-12;tip.style.left=x+'px';tip.style.top=(e.clientY+12)+'px'}
+function hideTip(){tip.style.opacity=0}
+function by(rows,k){const m=new Map();rows.forEach(r=>{const o=m.get(r[k])||{k:r[k],rev:0,gross:0,gp:0,cogs:0,n:0,q:0,dw:0,hero:r.hero};o.rev+=r.rev;o.gross+=r.gross;o.gp+=r.gp;o.cogs+=r.cogs;o.n++;o.q+=r.q;o.dw+=r.disc;m.set(r[k],o)});return[...m.values()].map(o=>({...o,disc:o.dw/o.n,aov:o.rev/o.n,margin:o.gp/o.rev*100}))}
+function hbar(el,items,valKey,label){
+ const W=520,rowH=26,L=100,R=170,H=items.length*rowH+8,max=Math.max(...items.map(i=>i[valKey]),1);
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
+ items.forEach((it,i)=>{const y=i*rowH+4,w=(W-L-R)*it[valKey]/max;
+  s+=`<g data-i="${i}" style="cursor:default"><rect x="0" y="${y-2}" width="${W}" height="${rowH-2}" fill="transparent"/><text class="lab" x="${L-8}" y="${y+13}" text-anchor="end">${it.k}</text><rect x="${L}" y="${y+2}" width="${Math.max(w,2)}" height="14" rx="3" fill="${it.hero==='Y'||!('hero' in it)||it.hero===undefined?'var(--bar)':'var(--bar-dim)'}"/><text class="lab" x="${L+w+6}" y="${y+13}">${fmt(it[valKey])}${it.extra?' · '+it.extra:''}</text></g>`});
+ el.innerHTML=s+'</svg>';
+ el.querySelectorAll('g[data-i]').forEach(g=>{const it=items[g.dataset.i];g.onmousemove=e=>showTip(e,`<b>${it.k}</b><br>Revenue ${fmt(it.rev)}<br>Gross profit ${fmt(it.gp)}<br>Orders ${it.n} · Avg discount ${pct(it.disc)}`);g.onmouseleave=hideTip})}
+function line(el,pts){
+ const W=520,H=230,L=48,R=14,T=12,B=28,max=Math.max(...pts.map(p=>p.rev),1)*1.1;
+ const x=i=>L+(pts.length<2?0:(W-L-R)*i/(pts.length-1)),y=v=>T+(H-T-B)*(1-v/max);
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Net revenue by month">`;
+ for(let i=0;i<=4;i++){const v=max*i/4,yy=y(v);s+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${L-6}" y="${yy+4}" text-anchor="end">${v>=1000?Math.round(v/1000)+'k':Math.round(v)}</text>`}
+ if(pts.length){s+=`<path d="M${x(0)},${y(0)} ${pts.map((p,i)=>`L${x(i)},${y(p.rev)}`).join(' ')} L${x(pts.length-1)},${y(0)}Z" fill="var(--bar)" opacity=".12"/><path d="${pts.map((p,i)=>(i?'L':'M')+x(i)+','+y(p.rev)).join(' ')}" fill="none" stroke="var(--bar)" stroke-width="2"/>`;
+ pts.forEach((p,i)=>{s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${p.lab}</text><circle data-i="${i}" cx="${x(i)}" cy="${y(p.rev)}" r="4" fill="var(--bar)" stroke="var(--surface)" stroke-width="2"/><circle data-i="${i}" cx="${x(i)}" cy="${y(p.rev)}" r="14" fill="transparent"/>`})}
+ el.innerHTML=s+'</svg>';
+ el.querySelectorAll('circle[r="14"]').forEach(c=>{const p=pts[c.dataset.i];c.onmousemove=e=>showTip(e,`<b>${p.lab} 2024</b><br>Revenue ${fmt(p.rev)}<br>Orders ${p.n}`);c.onmouseleave=hideTip})}
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function render(){
+ const ch=$('#fCh').value,cat=$('#fCat').value,seg=$('#fSeg').value;
+ const R=D.filter(d=>(!ch||d.ch===ch)&&(!cat||d.cat===cat)&&(!seg||d.seg===seg));
+ $('#sub').textContent=R.length+' of '+D.length+' orders in view';
+ const rev=R.reduce((a,d)=>a+d.rev,0),gross=R.reduce((a,d)=>a+d.gross,0),gp=R.reduce((a,d)=>a+d.gp,0),units=R.reduce((a,d)=>a+d.q,0);
+ const k=[['Net revenue',fmt(rev),pct(gross?(1-rev/gross)*100:0)+' given away in discounts'],['Orders',R.length,units+' units'],['Avg order value',R.length?fmt(rev/R.length):'–','net of discount'],['Gross margin',rev?pct(gp/rev*100):'–',fmt(gp)+' gross profit']];
+ $('#kpis').innerHTML=k.map(a=>`<div class="kpi"><div class="l">${a[0]}</div><div class="v">${a[1]}</div><div class="n">${a[2]}</div></div>`).join('');
+ // channel
+ const chs=by(R,'ch').sort((a,b)=>b.rev-a.rev).map(c=>({...c,hero:'Y',extra:pct(c.rev/rev*100)+' · −'+c.disc.toFixed(1)+"%"}));
+ hbar($('#cCh'),chs,'rev','Net revenue by channel');
+ // month
+ const mo=by(R,'month').sort((a,b)=>a.k<b.k?-1:1).map(m=>({...m,lab:MN[+m.k.slice(5)-1]}));
+ line($('#cMo'),mo);
+ // product
+ const pr=by(R,'prod').sort((a,b)=>b[metric]-a[metric]);
+ hbar($('#cPr'),pr,metric,'Net revenue by product');
+ // tables
+ const mcls=m=>m>=60?'g':'w';
+ const cats=by(R,'cat').sort((a,b)=>b.rev-a.rev);
+ $('#tCat').innerHTML='<tr><th>Category</th><th>Total Revenue</th><th>Orders</th><th>Avg Order Value</th><th>Gross margin</th></tr>'+cats.map(c=>`<tr><td>${c.k}</td><td>${fmt(c.rev)}</td><td>${c.n}</td><td>${fmt(c.aov)}</td><td>${pct(c.margin)}</td></tr>`).join('');
+ const chAll=by(R,'ch').sort((a,b)=>b.disc-a.disc);
+ $('#tCh').innerHTML='<tr><th>Channel</th><th>Orders</th><th>Avg discount</th><th>Net revenue</th><th>Gross margin</th><th>Margin health</th></tr>'+chAll.map(c=>`<tr><td>${c.k}</td><td>${c.n}</td><td>${pct(c.disc)}</td><td>${fmt(c.rev)}</td><td>${pct(c.margin)}</td><td><span class="pill ${mcls(c.margin)}">${c.margin>=60?'Healthy':'Thin'}</span></td></tr>`).join('');
+ // insights
+ const I=[];
+ if(chs.length){const t=chs[0];I.push(`<b>${t.k}</b> brings in the most revenue (${pct(t.rev/rev*100)} of the total).`)}
+ if(chAll.length>1){const a=chAll[0],b=[...chAll].sort((x,y)=>y.margin-x.margin)[0];I.push(`<b>${a.k}</b> gives the deepest discount (${pct(a.disc)} on average) and earns a ${pct(a.margin)} margin, against ${pct(b.margin)} on <b>${b.k}</b>.`)}
+ if(pr.length){const t=[...pr].sort((a,b)=>b.rev-a.rev)[0];I.push(`<b>${t.k}</b> is the top product at ${fmt(t.rev)}, ${pct(t.rev/rev*100)} of revenue.`)}
+ if(cats.length>1){const t=[...cats].sort((a,b)=>b.aov-a.aov)[0];I.push(`<b>${t.k}</b> has the highest average order value (${fmt(t.aov)}).`)}
+ $('#ins').innerHTML=I.map(i=>'<li>'+i+'</li>').join('')||'<li>No orders match these filters.</li>';
+ $('#bRev').setAttribute('aria-pressed',metric==='rev');$('#bGp').setAttribute('aria-pressed',metric==='gp');
+}
+['#fCh','#fCat','#fSeg'].forEach(s=>$(s).onchange=render);
+$('#bRev').onclick=()=>{metric='rev';render()};$('#bGp').onclick=()=>{metric='gp';render()};
+render();
+</script>
+
+</body></html>
