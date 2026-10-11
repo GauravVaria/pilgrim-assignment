@@ -1,10 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>D2C Channel Dashboard</title>
 <style>
 /* Layout: filter bar on top, KPI strip, 2-col chart grid (channel, month, product, category table). Single blue accent; status colors reserved for margin cues. */
-:root{--bg:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#6f6d67;--grid:#e1e0d9;--axis:#c3c2b7;--bar:#2a78d6;--bar-dim:#9ec5f4;--bd:rgba(11,11,11,.10);--good:#006300;--warn:#8a5a00}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09e96;--grid:#2c2c2a;--axis:#383835;--bar:#3987e5;--bar-dim:#1c5cab;--bd:rgba(255,255,255,.10);--good:#0ca30c;--warn:#fab219;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09e96;--grid:#2c2c2a;--axis:#383835;--bar:#3987e5;--bar-dim:#1c5cab;--bd:rgba(255,255,255,.10);--good:#0ca30c;--warn:#fab219;color-scheme:dark}
+:root{--bg:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#6f6d67;--grid:#e1e0d9;--axis:#c3c2b7;--bar:#2a78d6;--bar-dim:#9ec5f4;--up:#0ca30c;--down:#d03b3b;--bd:rgba(11,11,11,.10);--good:#006300;--warn:#8a5a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09e96;--grid:#2c2c2a;--axis:#383835;--bar:#3987e5;--bar-dim:#1c5cab;--up:#0ca30c;--down:#e66767;--bd:rgba(255,255,255,.10);--good:#0ca30c;--warn:#fab219;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09e96;--grid:#2c2c2a;--axis:#383835;--bar:#3987e5;--bar-dim:#1c5cab;--up:#0ca30c;--down:#e66767;--bd:rgba(255,255,255,.10);--good:#0ca30c;--warn:#fab219;color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding-inline:16px;padding-block:20px;font-size:14px;line-height:1.45}
 .wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -40,7 +39,8 @@ th:first-child,td:first-child{text-align:left}
 th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid currentColor}
 .pill.g{color:var(--good)}.pill.w{color:var(--warn)}
-.ins{margin:0;padding-left:18px;color:var(--ink2);font-size:13px;display:flex;flex-direction:column;gap:4px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 10px;vertical-align:-1px}
+.ins{margin:0;padding-left:18px;color:var(--ink);font-size:14px;display:flex;flex-direction:column;gap:4px}
 footer{color:var(--muted);font-size:12px}
 </style>
 <div class="wrap">
@@ -55,9 +55,9 @@ footer{color:var(--muted);font-size:12px}
 <section class="kpis" id="kpis" aria-label="Key figures"></section>
 <section class="card wide"><h2>Key takeaways</h2><ul class="ins" id="ins"></ul></section>
 <div class="grid">
- <section class="card"><h2>Net revenue by channel</h2><p class="hint">After channel discount. Label shows share of revenue and average discount.</p><div id="cCh"></div></section>
+ <section class="card"><h2>Net revenue by channel</h2><p class="hint" id="hCh"></p><div id="cCh"></div></section>
  <section class="card"><h2>Net revenue by month</h2><p class="hint">Hover a point for the month's figures.</p><div id="cMo"></div></section>
- <section class="card wide"><div class="tabs"><h2 style="flex:1;align-self:center">Net revenue by product</h2><button class="t" id="bRev" aria-pressed="true">Revenue</button><button class="t" id="bGp" aria-pressed="false">Gross profit</button></div><p class="hint">Hero products are drawn in the full blue; others are lighter.</p><div id="cPr" style="max-width:720px"></div></section>
+ <section class="card wide"><div class="tabs"><h2 style="flex:1;align-self:center">Net revenue by product</h2><button class="t" id="bRev" aria-pressed="true">Revenue</button><button class="t" id="bGp" aria-pressed="false">Gross profit</button></div><p class="hint" id="hPr"></p><div id="cPr" style="max-width:720px"></div></section>
  <section class="card wide"><h2>Category summary</h2><p class="hint">Total Revenue, Orders and Avg Order Value (revenue / orders), plus gross margin.</p><div class="scroll"><table id="tCat"></table></div></section>
  <section class="card wide"><h2>Channel discount and margin</h2><p class="hint">Gross margin = (net revenue − cost of goods) / net revenue. Deeper discounts cut margin.</p><div class="scroll"><table id="tCh"></table></div></section>
 </div>
@@ -76,11 +76,11 @@ const tip=$('#tip');
 function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const w=tip.offsetWidth;let x=e.clientX+12;if(x+w>innerWidth-8)x=e.clientX-w-12;tip.style.left=x+'px';tip.style.top=(e.clientY+12)+'px'}
 function hideTip(){tip.style.opacity=0}
 function by(rows,k){const m=new Map();rows.forEach(r=>{const o=m.get(r[k])||{k:r[k],rev:0,gross:0,gp:0,cogs:0,n:0,q:0,dw:0,hero:r.hero};o.rev+=r.rev;o.gross+=r.gross;o.gp+=r.gp;o.cogs+=r.cogs;o.n++;o.q+=r.q;o.dw+=r.disc;m.set(r[k],o)});return[...m.values()].map(o=>({...o,disc:o.dw/o.n,aov:o.rev/o.n,margin:o.gp/o.rev*100}))}
-function hbar(el,items,valKey,label){
- const W=520,rowH=26,L=100,R=170,H=items.length*rowH+8,max=Math.max(...items.map(i=>i[valKey]),1);
+function hbar(el,items,valKey,label,L=100,R=170){
+ const W=520,rowH=26,H=items.length*rowH+8,max=Math.max(...items.map(i=>i[valKey]),1);
  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
  items.forEach((it,i)=>{const y=i*rowH+4,w=(W-L-R)*it[valKey]/max;
-  s+=`<g data-i="${i}" style="cursor:default"><rect x="0" y="${y-2}" width="${W}" height="${rowH-2}" fill="transparent"/><text class="lab" x="${L-8}" y="${y+13}" text-anchor="end">${it.k}</text><rect x="${L}" y="${y+2}" width="${Math.max(w,2)}" height="14" rx="3" fill="${it.hero==='Y'||!('hero' in it)||it.hero===undefined?'var(--bar)':'var(--bar-dim)'}"/><text class="lab" x="${L+w+6}" y="${y+13}">${fmt(it[valKey])}${it.extra?' · '+it.extra:''}</text></g>`});
+  s+=`<g data-i="${i}" style="cursor:default"><rect x="0" y="${y-2}" width="${W}" height="${rowH-2}" fill="transparent"/><text class="lab" x="${L-8}" y="${y+13}" text-anchor="end">${it.lab||it.k}</text><rect x="${L}" y="${y+2}" width="${Math.max(w,2)}" height="14" rx="3" fill="${it.color||'var(--bar)'}"/><text class="lab" x="${L+w+6}" y="${y+13}">${fmt(it[valKey])}${it.extra?' · '+it.extra:''}</text></g>`});
  el.innerHTML=s+'</svg>';
  el.querySelectorAll('g[data-i]').forEach(g=>{const it=items[g.dataset.i];g.onmousemove=e=>showTip(e,`<b>${it.k}</b><br>Revenue ${fmt(it.rev)}<br>Gross profit ${fmt(it.gp)}<br>Orders ${it.n} · Avg discount ${pct(it.disc)}`);g.onmouseleave=hideTip})}
 function line(el,pts){
@@ -98,17 +98,22 @@ function render(){
  const R=D.filter(d=>(!ch||d.ch===ch)&&(!cat||d.cat===cat)&&(!seg||d.seg===seg));
  $('#sub').textContent=R.length+' of '+D.length+' orders in view';
  const rev=R.reduce((a,d)=>a+d.rev,0),gross=R.reduce((a,d)=>a+d.gross,0),gp=R.reduce((a,d)=>a+d.gp,0),units=R.reduce((a,d)=>a+d.q,0);
- const k=[['Net revenue',fmt(rev),pct(gross?(1-rev/gross)*100:0)+' given away in discounts'],['Orders',R.length,units+' units'],['Avg order value',R.length?fmt(rev/R.length):'–','net of discount'],['Gross margin',rev?pct(gp/rev*100):'–',fmt(gp)+' gross profit']];
- $('#kpis').innerHTML=k.map(a=>`<div class="kpi"><div class="l">${a[0]}</div><div class="v">${a[1]}</div><div class="n">${a[2]}</div></div>`).join('');
+ const k=[['Net revenue',fmt(rev),pct(gross?(1-rev/gross)*100:0)+' given away in discounts'],['Orders',R.length,units+' units'],['Avg order value',R.length?fmt(rev/R.length):'–','net of discount'],['Gross margin',rev?pct(gp/rev*100):'–',fmt(gp)+' gross profit',rev&&gp/rev>=.6?'var(--up)':'var(--down)']];
+ $('#kpis').innerHTML=k.map(a=>`<div class="kpi"><div class="l">${a[0]}</div><div class="v"${a[3]?` style="color:${a[3]}"`:''}>${a[1]}</div><div class="n">${a[2]}</div></div>`).join('');
  // channel
- const chs=by(R,'ch').sort((a,b)=>b.rev-a.rev).map(c=>({...c,hero:'Y',extra:pct(c.rev/rev*100)+' · −'+c.disc.toFixed(1)+"%"}));
- hbar($('#cCh'),chs,'rev','Net revenue by channel');
+ const mAll=rev?gp/rev*100:0;
+ const chs=by(R,'ch').sort((a,b)=>b.rev-a.rev).map(c=>({...c,color:c.margin>=mAll?'var(--up)':'var(--down)',extra:pct(c.margin)+' margin · −'+c.disc.toFixed(1)+'% disc.'}));
+ hbar($('#cCh'),chs,'rev','Net revenue by channel',100,230);
+ const mk=`<span class="sw" style="background:var(--up);margin-left:0"></span>margin at or above overall ${pct(mAll)}<span class="sw" style="background:var(--down)"></span>below overall`;
+ $('#hCh').innerHTML='Bar length is net revenue. '+mk+'.';
  // month
  const mo=by(R,'month').sort((a,b)=>a.k<b.k?-1:1).map(m=>({...m,lab:MN[+m.k.slice(5)-1]}));
  line($('#cMo'),mo);
  // product
- const pr=by(R,'prod').sort((a,b)=>b[metric]-a[metric]);
- hbar($('#cPr'),pr,metric,'Net revenue by product');
+ const pr=by(R,'k'in R[0]||true?'prod':'prod').sort((a,b)=>b[metric]-a[metric]);
+ pr.forEach(x=>{x.color=x.margin>=mAll?'var(--up)':'var(--down)';x.lab=x.k+(x.hero==='Y'?' ★':'');x.extra=pct(x.margin)+' margin'});
+ hbar($('#cPr'),pr,metric,metric==='rev'?'Net revenue by product':'Gross profit by product',160,170);
+ $('#hPr').innerHTML='Bar length is '+(metric==='rev'?'net revenue':'gross profit')+'. ★ = hero product. '+mk+'.';
  // tables
  const mcls=m=>m>=60?'g':'w';
  const cats=by(R,'cat').sort((a,b)=>b.rev-a.rev);
@@ -128,5 +133,3 @@ function render(){
 $('#bRev').onclick=()=>{metric='rev';render()};$('#bGp').onclick=()=>{metric='gp';render()};
 render();
 </script>
-
-</body></html>
